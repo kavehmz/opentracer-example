@@ -3,8 +3,6 @@ package store
 import (
 	"os"
 
-	"github.com/opentracing/opentracing-go"
-
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -14,7 +12,6 @@ type Store struct {
 type Item struct {
 	Title string
 	Url   string
-	Ctx   opentracing.SpanContext
 }
 
 func (s *Store) storage() string {

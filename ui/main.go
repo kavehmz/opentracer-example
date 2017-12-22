@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
-	"time"
 
 	"github.com/kavehmz/opentracer-example/store"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -32,7 +31,7 @@ func add(w http.ResponseWriter, r *http.Request) {
 	client, err := conn(parent, "ADDSRV")
 	defer client.Close()
 
-	args := store.Item{Title: "test", Url: "url", Ctx: parent.Context()}
+	args := store.Item{Title: "test", Url: "url"}
 	var reply int64
 	callSpan := opentracing.StartSpan("call", opentracing.ChildOf(parent.Context()))
 	defer callSpan.Finish()
@@ -56,16 +55,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 }
 
 func tracerInit(serviceName string) (opentracing.Tracer, io.Closer) {
-	cfg := config.Configuration{
-		Sampler: &config.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &config.ReporterConfig{
-			LogSpans:            false,
-			BufferFlushInterval: 1 * time.Second,
-		},
-	}
+	cfg := config.Configuration{}
 	tracer, closer, err := cfg.New(
 		serviceName,
 	)
