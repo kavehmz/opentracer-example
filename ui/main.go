@@ -72,7 +72,7 @@ func tracerInit(service string) io.Closer {
 	}
 
 	closer, err := cfg.InitGlobalTracer(
-		"service",
+		service,
 	)
 	if err != nil {
 		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
