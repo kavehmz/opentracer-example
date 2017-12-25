@@ -1,42 +1,77 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net"
+	"net/http"
 	"net/rpc"
-
-	"github.com/opentracing/opentracing-go"
+	"time"
 
 	"github.com/kavehmz/opentracer-example/store"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	jaeger "github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 )
 
 type Add struct {
-	spanContext opentracing.SpanContext
 }
 
 func (r *Add) Add(item *store.Item, num *int64) error {
+	var serverSpan opentracing.Span
+	appSpecificOperationName := "add operation"
+	wireContext, err := opentracing.GlobalTracer().Extract(opentracing.TextMap, item.Trace)
+	if err != nil {
+		panic(err)
+	}
+
+	serverSpan = opentracing.StartSpan(
+		appSpecificOperationName,
+		ext.RPCServerOption(wireContext))
+
+	defer serverSpan.Finish()
+
 	s := store.Store{}
-	var err error
+	time.Sleep(time.Millisecond * 113)
 	*num, err = s.Add(item)
 	return err
 }
 
+func tracerInit() io.Closer {
+	cfg := jaegercfg.Configuration{
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  jaeger.SamplerTypeConst,
+			Param: 1,
+		},
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans: true,
+		},
+	}
+
+	closer, err := cfg.InitGlobalTracer(
+		"Add Service",
+	)
+	if err != nil {
+		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
+		return nil
+	}
+
+	return closer
+}
+
 func main() {
+	defer tracerInit().Close()
+
 	add := new(Add)
 	rpc.Register(add)
+	rpc.HandleHTTP()
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", ":1234")
-	checkError(err)
-	listener, err := net.ListenTCP("tcp", tcpAddr)
-	checkError(err)
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			continue
-		}
-		rpc.ServeConn(conn)
+	l, e := net.Listen("tcp", ":1234")
+	if e != nil {
+		log.Fatal("listen error:", e)
 	}
+	http.Serve(l, nil)
 
 }
 

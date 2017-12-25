@@ -10,17 +10,19 @@ import (
 
 	"github.com/kavehmz/opentracer-example/store"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/uber/jaeger-client-go/config"
+	jaeger "github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 )
 
 func conn(parent opentracing.Span, service string) (*rpc.Client, error) {
 	sp := opentracing.StartSpan("conncet to rpc server", opentracing.ChildOf(parent.Context()))
 	defer sp.Finish()
 
-	client, err := rpc.Dial("tcp", os.Getenv(service))
+	client, err := rpc.DialHTTP("tcp", os.Getenv(service))
 	if err != nil {
 		log.Panic("dialing add service:", err)
 	}
+
 	return client, err
 }
 
@@ -31,13 +33,17 @@ func add(w http.ResponseWriter, r *http.Request) {
 	client, err := conn(parent, "ADDSRV")
 	defer client.Close()
 
-	args := store.Item{Title: "test", Url: "url"}
+	item := store.Item{Title: "test", Url: "url"}
 	var reply int64
 	callSpan := opentracing.StartSpan("call", opentracing.ChildOf(parent.Context()))
 	defer callSpan.Finish()
-	err = (client).Call("Add.Add", args, &reply)
+
+	item.Trace = make(map[string]string)
+	opentracing.GlobalTracer().Inject(callSpan.Context(), opentracing.TextMap, item.Trace)
+
+	err = client.Call("Add.Add", item, &reply)
 	if err != nil {
-		log.Panic("arith error:", err)
+		log.Panic("add error:", err)
 	}
 	fmt.Fprintf(w, "added item number: %d\n", reply)
 }
@@ -51,24 +57,33 @@ func ls(w http.ResponseWriter, r *http.Request) {
 }
 
 func get(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ls!")
+	fmt.Fprintf(w, "get!")
 }
 
-func tracerInit(serviceName string) (opentracing.Tracer, io.Closer) {
-	cfg := config.Configuration{}
-	tracer, closer, err := cfg.New(
-		serviceName,
+func tracerInit(service string) io.Closer {
+	cfg := jaegercfg.Configuration{
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  jaeger.SamplerTypeConst,
+			Param: 1,
+		},
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans: true,
+		},
+	}
+
+	closer, err := cfg.InitGlobalTracer(
+		"service",
 	)
 	if err != nil {
-
+		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
+		return nil
 	}
-	return tracer, closer
+
+	return closer
 }
 
 func main() {
-	tracer, closer := tracerInit("prime-example")
-	defer closer.Close()
-	opentracing.InitGlobalTracer(tracer)
+	defer tracerInit("Store").Close()
 
 	http.HandleFunc("/add", add)
 	http.HandleFunc("/rm", rm)
