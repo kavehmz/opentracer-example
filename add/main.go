@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"net/rpc"
-	"time"
 
 	"github.com/kavehmz/opentracer-example/store"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -20,21 +20,17 @@ type Add struct {
 
 func (r *Add) Add(item *store.Item, num *int64) error {
 	var serverSpan opentracing.Span
-	appSpecificOperationName := "add operation"
 	wireContext, err := opentracing.GlobalTracer().Extract(opentracing.TextMap, item.Trace)
 	if err != nil {
 		panic(err)
 	}
 
-	serverSpan = opentracing.StartSpan(
-		appSpecificOperationName,
-		ext.RPCServerOption(wireContext))
-
+	serverSpan = opentracing.StartSpan("add operation", ext.RPCServerOption(wireContext))
 	defer serverSpan.Finish()
+	ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
 
 	s := store.Store{}
-	time.Sleep(time.Millisecond * 113)
-	*num, err = s.Add(item)
+	*num, err = s.Add(ctx, item)
 	return err
 }
 

@@ -1,9 +1,11 @@
 package store
 
 import (
+	"context"
 	"fmt"
-	"os"
-	"time"
+
+	"github.com/garyburd/redigo/redis"
+	opentracing "github.com/opentracing/opentracing-go"
 )
 
 type Store struct {
@@ -32,16 +34,22 @@ func (c TextMapCarrier) Set(key, val string) {
 }
 
 func (s *Store) storage() string {
-	return os.Getenv("REDIS")
+	return "localhost:6379"
 }
 
-func (s *Store) Add(item *Item) (int64, error) {
-	return time.Now().Unix(), nil
-	// c, err := redis.Dial("tcp", s.storage())
-	// if err != nil {
-	// 	return 0, err
-	// }
-	// defer c.Close()
-	// c.Do("SET", item.Title, item.Url)
-	// return redis.Int64(c.Do("INCR", "items"))
+func (s *Store) Add(ctx context.Context, item *Item) (int64, error) {
+	parent := opentracing.SpanFromContext(ctx)
+	if parent == nil {
+		fmt.Println("Span not found")
+	} else {
+		sp := opentracing.StartSpan("Save To Redis", opentracing.ChildOf(parent.Context()))
+		defer sp.Finish()
+	}
+	c, err := redis.Dial("tcp", s.storage())
+	if err != nil {
+		return 0, err
+	}
+	defer c.Close()
+	c.Do("SET", item.Title, item.Url)
+	return redis.Int64(c.Do("INCR", "items"))
 }
