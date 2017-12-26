@@ -8,7 +8,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-func BenchmarkOpenTracing(b *testing.B) {
+func BenchmarkStartSpan(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		span := opentracing.StartSpan("add operation")
 		span.LogEvent("test event")
