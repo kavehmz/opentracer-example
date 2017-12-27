@@ -31,7 +31,6 @@ func (r *Add) Add(item *store.Item, num *int64) error {
 }
 
 func main() {
-
 	defer store.TracerInit("Add Service").Close()
 
 	add := new(Add)

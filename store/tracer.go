@@ -3,6 +3,9 @@ package store
 import (
 	"io"
 	"log"
+
+	jaeger "github.com/uber/jaeger-client-go"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 )
 
 func TracerInit(service string) io.Closer {
