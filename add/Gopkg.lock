@@ -2,6 +2,18 @@
 
 
 [[projects]]
+  name = "github.com/apache/thrift"
+  packages = ["lib/go/thrift"]
+  revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
+  version = "0.10.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/codahale/hdrhistogram"
+  packages = ["."]
+  revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
+
+[[projects]]
   name = "github.com/garyburd/redigo"
   packages = ["internal","redis"]
   revision = "47dc60e71eed504e3ef8e77ee3c6fe720f3be57f"
@@ -11,13 +23,25 @@
   branch = "master"
   name = "github.com/kavehmz/opentracer-example"
   packages = ["store"]
-  revision = "37018b11ae6f38df8a7b2fe6979203a8b74f5c92"
+  revision = "0dda422df1b93ee7ae9c71eaa9385f68dff8a99b"
 
 [[projects]]
   branch = "master"
   name = "github.com/opentracing/opentracing-go"
   packages = [".","ext","log"]
   revision = "1361b9cd60be79c4c3a7fa9841b3c132e40066a7"
+
+[[projects]]
+  name = "github.com/uber/jaeger-client-go"
+  packages = [".","config","internal/baggage","internal/baggage/remote","internal/spanlog","log","rpcmetrics","thrift-gen/agent","thrift-gen/baggage","thrift-gen/jaeger","thrift-gen/sampling","thrift-gen/zipkincore","utils"]
+  revision = "ff3efa227b65e419701a4f48985379ca106a89e7"
+  version = "v2.11.0"
+
+[[projects]]
+  name = "github.com/uber/jaeger-lib"
+  packages = ["metrics"]
+  revision = "c48167d9cae5887393dd5e61efd06a4a48b7fbb3"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -28,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ef1a273ed45e098245594cc3114d955ffdcf3a88308ad1865e498675dcdf9c5f"
+  inputs-digest = "47d87d86fc84e4ff5c2e300ae29bc720baf50eb733b0402085db4988b74f943d"
   solver-name = "gps-cdcl"
   solver-version = 1
