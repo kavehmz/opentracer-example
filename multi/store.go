@@ -15,6 +15,7 @@ type Item struct {
 	Title string
 	Url   string
 	Trace TextMapCarrier
+	Level int
 }
 
 type TextMapCarrier map[string]string
@@ -37,12 +38,12 @@ func (s *Store) storage() string {
 	return "localhost:6379"
 }
 
-func (s *Store) Add(ctx context.Context, item *Item) (int64, error) {
+func (s *Store) Add(tracer opentracing.Tracer, ctx context.Context, item *Item) (int64, error) {
 	parent := opentracing.SpanFromContext(ctx)
 	if parent == nil {
 		fmt.Println("Span not found")
 	} else {
-		sp := rpcTracer.StartSpan("Save To Redis", opentracing.ChildOf(parent.Context()))
+		sp := tracer.StartSpan("Save To Redis", opentracing.ChildOf(parent.Context()))
 		defer sp.Finish()
 	}
 	c, err := redis.Dial("tcp", s.storage())

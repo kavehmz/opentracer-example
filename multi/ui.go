@@ -15,7 +15,8 @@ func serve(w http.ResponseWriter, r *http.Request) {
 	span := uiTracer.StartSpan("Frontend Service")
 	defer span.Finish()
 
-	reply := nextCall(uiTracer, span)
+	item := Item{Title: "title", Url: "url", Trace: make(map[string]string)}
+	reply, _ := nextCall(uiTracer, span, item)
 
 	fmt.Fprintf(w, "served: %d\n", reply)
 }

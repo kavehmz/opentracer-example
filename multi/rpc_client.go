@@ -7,7 +7,7 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
-func nextCall(tracer opentracing.Tracer, parent opentracing.Span) int64 {
+func nextCall(tracer opentracing.Tracer, parent opentracing.Span, item Item) (int64, error) {
 	client, err := conn(tracer, parent, "RPC")
 	defer client.Close()
 
@@ -15,18 +15,19 @@ func nextCall(tracer opentracing.Tracer, parent opentracing.Span) int64 {
 	defer span.Finish()
 
 	var reply int64
-	item := Item{Title: "title", Url: "url", Trace: make(map[string]string)}
+
 	tracer.Inject(span.Context(), opentracing.TextMap, item.Trace)
 
 	err = client.Call("Do.Deed", item, &reply)
+
 	if err != nil {
-		log.Panic("Do.Deed error:", err)
+		log.Println("Do.Deed error:", err)
 	}
-	return reply
+	return reply, err
 }
 
 func conn(tracer opentracing.Tracer, parent opentracing.Span, service string) (*rpc.Client, error) {
-	sp := opentracing.StartSpan("Conncet to rpc server", opentracing.ChildOf(parent.Context()))
+	sp := tracer.StartSpan("Conncet to rpc server", opentracing.ChildOf(parent.Context()))
 	defer sp.Finish()
 
 	client, err := rpc.Dial("tcp", "localhost:1234")
