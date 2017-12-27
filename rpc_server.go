@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/rpc"
 	"os"
@@ -17,7 +18,7 @@ type Do struct{}
 
 func (r *Do) Deed(item *Item, num *int64) error {
 
-	tracer, closer := TracerInit("Do Service Level " + strconv.Itoa(item.Level))
+	tracer, closer := TracerInit("S" + strconv.Itoa(rand.Intn(2)+item.Level))
 	if closer != nil {
 		defer closer.Close()
 	}
