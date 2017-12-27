@@ -53,3 +53,20 @@ func (s *Store) Add(ctx context.Context, item *Item) (int64, error) {
 	c.Do("SET", item.Title, item.Url)
 	return redis.Int64(c.Do("INCR", "items"))
 }
+
+func (s *Store) Remove(ctx context.Context, item *Item) (int64, error) {
+	parent := opentracing.SpanFromContext(ctx)
+	if parent == nil {
+		fmt.Println("Span not found")
+	} else {
+		sp := opentracing.StartSpan("Remove From Redis", opentracing.ChildOf(parent.Context()))
+		defer sp.Finish()
+	}
+	c, err := redis.Dial("tcp", s.storage())
+	if err != nil {
+		return 0, err
+	}
+	defer c.Close()
+	c.Do("DEL", item.Title)
+	return redis.Int64(c.Do("DECR", "items"))
+}
