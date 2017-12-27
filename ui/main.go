@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/rpc"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/kavehmz/opentracer-example/store"
 	opentracing "github.com/opentracing/opentracing-go"
-	jaeger "github.com/uber/jaeger-client-go"
-	jaegercfg "github.com/uber/jaeger-client-go/config"
 )
 
 func conn(parent opentracing.Span, service string) (*rpc.Client, error) {
@@ -27,18 +24,17 @@ func conn(parent opentracing.Span, service string) (*rpc.Client, error) {
 }
 
 func add(w http.ResponseWriter, r *http.Request) {
-	parent := opentracing.StartSpan("Add Item")
+	parent := opentracing.StartSpan("Frontend Add Item")
 	defer parent.Finish()
 
 	client, err := conn(parent, "ADDSRV")
 	defer client.Close()
 
-	item := store.Item{Title: "test", Url: "url"}
-	var reply int64
 	callSpan := opentracing.StartSpan("call", opentracing.ChildOf(parent.Context()))
 	defer callSpan.Finish()
 
-	item.Trace = make(map[string]string)
+	var reply int64
+	item := store.Item{Title: "test", Url: "url", Trace: make(map[string]string)}
 	opentracing.GlobalTracer().Inject(callSpan.Context(), opentracing.TextMap, item.Trace)
 
 	err = client.Call("Add.Add", item, &reply)
@@ -49,46 +45,31 @@ func add(w http.ResponseWriter, r *http.Request) {
 }
 
 func rm(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "rm!")
-}
+	parent := opentracing.StartSpan("Frontend Remove Item")
+	defer parent.Finish()
 
-func ls(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ls!")
-}
+	client, err := conn(parent, "REMOVESRV")
+	defer client.Close()
 
-func get(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "get!")
-}
+	callSpan := opentracing.StartSpan("call", opentracing.ChildOf(parent.Context()))
+	defer callSpan.Finish()
 
-func tracerInit(service string) io.Closer {
-	cfg := jaegercfg.Configuration{
-		Sampler: &jaegercfg.SamplerConfig{
-			Type:  jaeger.SamplerTypeConst,
-			Param: 1,
-		},
-		Reporter: &jaegercfg.ReporterConfig{
-			LogSpans: true,
-		},
-	}
+	var reply int64
+	item := store.Item{Title: "test", Url: "url", Trace: make(map[string]string)}
+	opentracing.GlobalTracer().Inject(callSpan.Context(), opentracing.TextMap, item.Trace)
 
-	closer, err := cfg.InitGlobalTracer(
-		service,
-	)
+	err = client.Call("Remove.Remove", item, &reply)
 	if err != nil {
-		log.Printf("Could not initialize jaeger tracer: %s", err.Error())
-		return nil
+		log.Panic("remove error:", err)
 	}
-
-	return closer
+	fmt.Fprintf(w, "remove item number: %d\n", reply)
 }
 
 func main() {
-	defer tracerInit("Store").Close()
+	defer store.TracerInit("Store Front").Close()
 
 	http.HandleFunc("/add", add)
-	http.HandleFunc("/rm", rm)
-	http.HandleFunc("/ls", ls)
-	http.HandleFunc("/get", get)
+	http.HandleFunc("/remove", rm)
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
