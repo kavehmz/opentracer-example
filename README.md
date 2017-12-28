@@ -15,3 +15,15 @@ This test will issue redis `SET` is `REDISURL` environment variable is set. Othe
 ```bash
 go run *.go
 ```
+
+# References
+
+Uber's blog about Jaeger and opentracing:
+
+https://medium.com/opentracing/take-opentracing-for-a-hotrod-ride-f6e3141f7941
+
+Go opentracing API and how to use it:
+
+https://github.com/opentracing/opentracing-go
+
+Notice: opentracing itself and what we see in the code is independent of implemetation. We only need to know the API. Jaeger or Zipkin are just implementation details which will only change some details at Initilization time.
