@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"os"
+	"time"
 
 	"github.com/garyburd/redigo/redis"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -34,10 +37,6 @@ func (c TextMapCarrier) Set(key, val string) {
 	c[key] = val
 }
 
-func (s *Store) storage() string {
-	return "localhost:6379"
-}
-
 func (s *Store) Add(tracer opentracing.Tracer, ctx context.Context, item *Item) (int64, error) {
 	parent := opentracing.SpanFromContext(ctx)
 	if parent == nil {
@@ -46,11 +45,17 @@ func (s *Store) Add(tracer opentracing.Tracer, ctx context.Context, item *Item) 
 		sp := tracer.StartSpan("Save To Redis", opentracing.ChildOf(parent.Context()))
 		defer sp.Finish()
 	}
-	c, err := redis.Dial("tcp", s.storage())
-	if err != nil {
-		return 0, err
+	if os.Getenv("REDISURL") != "" {
+
+		c, err := redis.Dial("tcp", os.Getenv("REDISURL"))
+		if err != nil {
+			return 0, err
+		}
+		defer c.Close()
+		c.Do("SET", item.Title, item.Url)
+		return redis.Int64(c.Do("INCR", "items"))
 	}
-	defer c.Close()
-	c.Do("SET", item.Title, item.Url)
-	return redis.Int64(c.Do("INCR", "items"))
+
+	time.Sleep(time.Microsecond * time.Duration(rand.Intn(3000)))
+	return time.Now().Unix(), nil
 }

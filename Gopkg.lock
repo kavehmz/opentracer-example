@@ -20,12 +20,6 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/kavehmz/opentracer-example"
-  packages = ["store"]
-  revision = "ca977d2305d623c324fb7fd3261ffebed3014f48"
-
-[[projects]]
   name = "github.com/opentracing/opentracing-go"
   packages = [".","ext","log"]
   revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
@@ -52,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5ecb3d39b653a1da905b8ea6ad16587c202b0877acb29fe0eba0fa2a768a26ca"
+  inputs-digest = "964918668fb7f4abed3dcce3e70a207312c1db72e76de626db7145cc7da3d5f4"
   solver-name = "gps-cdcl"
   solver-version = 1
